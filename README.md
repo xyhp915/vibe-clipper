@@ -1,55 +1,65 @@
 # Vibe Clipper - Demo Application
 
-这是一个基于 Clipper Core 库的演示应用，展示了如何使用该库从 HTML 内容中提取主内容并转换为 Markdown 格式。
+A demo application based on the Clipper Core library, showcasing HTML content extraction and Markdown conversion.
 
-## 🚀 快速开始
+## Table of Contents
 
-### 安装依赖
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [Examples](#examples)
+- [Testing](#testing)
+- [API Reference](#api-reference)
+
+### Quick Start
+
+#### Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 运行开发服务器
+#### Run Development Server
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:5173/ 查看演示页面。
+Visit http://localhost:5173/ to view the demo.
 
-### 运行测试
+#### Run Tests
 
 ```bash
-npm run test           # 运行所有测试
-npm run test:watch     # 监视模式
-npm run test:coverage  # 生成覆盖率报告
+npm run test           # Run all tests
+npm run test:watch     # Watch mode
+npm run test:coverage  # Coverage report
 ```
 
-### 构建生产版本
+#### Build for Production
 
 ```bash
 npm run build
-npm run preview  # 预览构建结果
+npm run preview  # Preview build
 ```
 
-## 📖 使用说明
+### Usage
 
-### 在线演示
+#### Online Demo
 
-1. 打开浏览器访问 http://localhost:5173/
-2. 可以选择预设示例（博客、新闻、食谱、表格）
-3. 或者粘贴自己的 HTML 内容
-4. 点击"Extract & Convert"按钮
-5. 查看转换后的 Markdown 内容和元数据
-6. 可以复制或下载 Markdown 文件
+1. Open http://localhost:5173/
+2. Select a preset example (blog, news, recipe, table)
+3. Or paste your own HTML
+4. Click "Extract & Convert"
+5. View Markdown output and metadata
+6. Copy or download the Markdown file
 
-### 在代码中使用 Clipper Core
+#### Using Clipper Core in Code
 
 ```typescript
 import { clip } from './lib/clipper-core';
 
-// 基本用法
 const html = `
   <!DOCTYPE html>
   <html>
@@ -65,54 +75,54 @@ const html = `
 
 const result = clip(html, { url: 'https://example.com/article' });
 
-console.log(result.markdown);           // Markdown 内容
-console.log(result.metadata.title);     // 标题
-console.log(result.metadata.author);    // 作者
-console.log(result.suggestedFilename);  // 建议的文件名
+console.log(result.markdown);           // Markdown content
+console.log(result.metadata.title);     // Title
+console.log(result.metadata.author);    // Author
+console.log(result.suggestedFilename);  // Suggested filename
 ```
 
-## 🎨 技术栈
+### Tech Stack
 
-- **框架**: Preact (React 的轻量级替代)
-- **构建工具**: Vite (使用 Rolldown)
-- **样式**: Bulma CSS
-- **测试**: Vitest
-- **内容提取**: Defuddle
-- **Markdown 转换**: Turndown
-- **语言**: TypeScript
+- **Framework**: Preact (lightweight React alternative)
+- **Build Tool**: Vite (with Rolldown)
+- **Styling**: Bulma CSS
+- **Testing**: Vitest
+- **Content Extraction**: Defuddle
+- **Markdown Conversion**: Turndown
+- **Language**: TypeScript
 
-## 📁 项目结构
+### Project Structure
 
 ```
 src/
-├── lib/clipper-core/          # 核心库
-│   ├── extractors/            # 内容提取器
-│   ├── converters/            # Markdown 转换器
-│   ├── utils/                 # 工具函数
-│   ├── types/                 # 类型定义
-│   └── __tests__/             # 测试文件
+├── lib/clipper-core/          # Core library
+│   ├── extractors/            # Content extractors
+│   ├── converters/            # Markdown converters
+│   ├── utils/                 # Utilities
+│   ├── types/                 # Type definitions
+│   └── __tests__/             # Tests
 ├── pages/
-│   └── ClipperPage.tsx        # 演示页面
-├── app.tsx                    # 主应用
-└── main.tsx                   # 入口文件
+│   └── ClipperPage.tsx        # Demo page
+├── app.tsx                    # Main app
+└── main.tsx                   # Entry point
 ```
 
-## ✨ 功能特性
+### Features
 
-- ✅ 从 HTML 页面提取主要内容
-- ✅ 转换为清晰的 Markdown 格式
-- ✅ 支持富文本格式（粗体、斜体等）
-- ✅ 表格和列表
-- ✅ 代码块（带语法标识）
-- ✅ 引用和脚注
-- ✅ 图片和链接处理
-- ✅ 元数据提取（标题、作者、描述等）
-- ✅ 数学公式支持（MathML、MathJax、KaTeX）
-- ✅ 嵌入内容支持（YouTube、Twitter）
+- ✅ Extract main content from HTML
+- ✅ Convert to clean Markdown
+- ✅ Rich formatting (bold, italic, etc.)
+- ✅ Tables and lists
+- ✅ Code blocks with syntax highlighting
+- ✅ Blockquotes and citations
+- ✅ Image and link handling
+- ✅ Metadata extraction (title, author, etc.)
+- ✅ Math formula support (MathML, MathJax, KaTeX)
+- ✅ Embedded content (YouTube, Twitter)
 
-## 📝 示例
+### Examples
 
-### 博客文章
+#### Blog Post
 
 ```html
 <!DOCTYPE html>
@@ -135,7 +145,7 @@ src/
 </html>
 ```
 
-转换后的 Markdown：
+Output Markdown:
 
 ```markdown
 Writing clean code is essential for maintainability.
@@ -145,20 +155,20 @@ Writing clean code is essential for maintainability.
 3. Write tests for your code
 ```
 
-## 🧪 测试
+### Testing
 
-项目包含完整的测试套件：
+Comprehensive test suite:
 
-- **单元测试**: 工具函数、字符串处理、URL 处理
-- **集成测试**: 内容提取、Markdown 转换
-- **端到端测试**: 完整的 clip 流程
+- Unit tests: utilities, string/URL processing
+- Integration tests: content extraction, Markdown conversion
+- E2E tests: full clip process
 
-运行测试覆盖率报告：
+Run coverage:
 
 ```bash
 npm run test:coverage
 ```
 
-## 🔧 API 参考
+### API Reference
 
-详细的 API 文档请查看 [src/lib/clipper-core/README.md](src/lib/clipper-core/README.md)
+See [src/lib/clipper-core/README.md](src/lib/clipper-core/README.md) for detailed API docs.
