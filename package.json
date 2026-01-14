@@ -1,0 +1,39 @@
+{
+  "name": "vibe-clipper",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "bulma": "^1.0.4",
+    "dayjs": "^1.11.19",
+    "defuddle": "^0.6.6",
+    "dompurify": "^3.3.1",
+    "mathml-to-latex": "^1.5.0",
+    "preact": "^10.27.2",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.2",
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^24.10.1",
+    "@types/turndown": "^5.0.6",
+    "@vitest/coverage-v8": "^4.0.17",
+    "jsdom": "^27.4.0",
+    "linkedom": "^0.18.12",
+    "typescript": "~5.9.3",
+    "vite": "npm:rolldown-vite@7.2.5",
+    "vitest": "^4.0.17"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.2.5"
+  }
+}
