@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:logseq": "vite build --config vite.config.logseq.ts",
+    "build:chrome": "vite build --config vite.config.chrome.ts && cp src/chrome/manifest.json dist/chrome/manifest.json && mv dist/chrome/popup.html dist/chrome/popup.html && mv dist/chrome.* dist/chrome/",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -19,7 +21,8 @@
     "mathml-to-latex": "^1.5.0",
     "preact": "^10.27.2",
     "turndown": "^7.2.2",
-    "turndown-plugin-gfm": "^1.0.2"
+    "turndown-plugin-gfm": "^1.0.2",
+    "@logseq/libs": "^0.2.11"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",
