@@ -1,5 +1,11 @@
 import '@logseq/libs'
 
+type ClipPayload = {
+  markdown: string
+  metadata: Record<string, any>
+  url: string
+}
+
 // This is the main entry point for your Logseq plugin
 logseq.ready(() => {
   console.log('Logseq plugin is ready!')
@@ -15,8 +21,23 @@ logseq.ready(() => {
 
   // Define the click handler for the toolbar button
   logseq.provideModel({
-    onReceiveClipperData: async (data: any, ex: any) => {
-      return logseq.UI.showMsg(`JSON Data: ${JSON.stringify(data)} \n\n Extra: ${JSON.stringify(ex)}`)
+    onReceiveClipperData: async (data: any) => {
+      try {
+        // data is base64 encoded JSON string
+        const decodedData = decodeURIComponent(atob(data))
+        const parsedData = JSON.parse(decodedData) as ClipPayload
+
+        const ret = await logseq.Editor.appendBlockInPage(
+          (await logseq.Editor.getCurrentPage())?.uuid!,
+          parsedData.markdown
+        )
+
+        console.log('Appended block:', ret)
+        return logseq.UI.showMsg('Clipper data processed successfully!')
+      } catch (error) {
+        console.error('Error processing clipper data:', error)
+        return logseq.UI.showMsg('Failed to process clipper data: ' + (error as Error).message, 'error')
+      }
     },
 
     onToolbarButtonClick: async () => {
