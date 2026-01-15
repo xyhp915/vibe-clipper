@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import preact from '@preact/preset-vite'
 
 export default defineConfig({
   base: '/', // Use relative paths for assets
   root: 'src',
+  plugins: [preact()],
   build: {
     outDir: '../dist', // Build output to root dist directory
     emptyOutDir: false,

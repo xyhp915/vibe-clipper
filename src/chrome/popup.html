@@ -1,29 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Vibe Clipper</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      width: 200px;
-      padding: 10px;
-      text-align: center;
+      min-width: 380px;
+      max-width: 600px;
       font-family: sans-serif;
     }
 
-    button {
-      background-color: #4285f4;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
+    #popup-app {
+      width: 100%;
     }
   </style>
 </head>
 <body>
-<h2>hello！</h2>
-<button id="btn">click me</button>
-<p id="msg"></p>
-<script src="popup.ts" type="module"></script>
+<div id="popup-app"></div>
+<script type="module" src="./popup.tsx"></script>
 </body>
 </html>
