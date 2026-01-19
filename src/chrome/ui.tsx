@@ -2,6 +2,7 @@
 import 'bulma/css/bulma.css'
 import { useState, useEffect } from 'preact/hooks'
 import { clip, type ClipResult } from '../lib/clipper-core'
+import { FileText, TextCursor, Send, Copy } from 'lucide-preact'
 
 export function PopupUI () {
   const [clipResult, setClipResult] = useState<ClipResult | null>(null)
@@ -197,7 +198,13 @@ export function PopupUI () {
 
   return (
       <div class={'container p-4'}
-           style={{ minWidth: '400px', maxWidth: '700px', maxHeight: '600px', overflow: 'auto' }}>
+           style={{
+             width: '100%',
+             height: '100%',
+             overflow: 'auto',
+             display: 'flex',
+             flexDirection: 'column'
+           }}>
         <h1 class="title is-4">
           Vibe Clipper
         </h1>
@@ -225,7 +232,7 @@ export function PopupUI () {
                 disabled={loading || !isChromeExtension}
             >
               <span class="icon">
-                <i class="fas fa-file-alt"></i>
+                <FileText size={16} />
               </span>
               <span>{clipResult ? 'Re-clip Page' : 'Clip Page'}</span>
             </button>
@@ -238,7 +245,7 @@ export function PopupUI () {
                 title={!hasSelection ? 'Please select some text on the page first' : 'Clip only selected content'}
             >
               <span class="icon">
-                <i class="fas fa-i-cursor"></i>
+                <TextCursor size={16} />
               </span>
               <span>Clip Selection</span>
             </button>
@@ -289,7 +296,7 @@ export function PopupUI () {
                       onClick={sendToLogseq}
                   >
                     <span class="icon">
-                      <i class="fas fa-paper-plane"></i>
+                      <Send size={16} />
                     </span>
                     <span>Send to Logseq</span>
                   </button>
@@ -302,7 +309,7 @@ export function PopupUI () {
                       }}
                   >
                     <span class="icon">
-                      <i class="fas fa-copy"></i>
+                      <Copy size={16} />
                     </span>
                     <span>Copy</span>
                   </button>

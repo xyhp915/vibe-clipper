@@ -1,4 +1,5 @@
 import '@logseq/libs'
+import { setCurrentClipperData } from './app.tsx'
 
 type ClipPayload = {
   markdown: string
@@ -19,6 +20,25 @@ logseq.ready(() => {
     </a>`
   })
 
+  // inject CSS
+  logseq.setMainUIInlineStyle({
+    width: '40vw',
+    minHeight: '300px',
+    maxWidth: '800px',
+    maxHeight: '80vh',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    overflow: 'hidden',
+    border: '1px solid #e0e0e0',
+    position: 'absolute',
+    // right side of the screen
+    top: '50px',
+    right: '16px',
+    left: 'unset',
+    backgroundColor: '#fff',
+    zIndex: '10',
+  })
+
   // Define the click handler for the toolbar button
   logseq.provideModel({
     onReceiveClipperData: async (data: any) => {
@@ -26,14 +46,7 @@ logseq.ready(() => {
         // data is base64 encoded JSON string
         const decodedData = decodeURIComponent(atob(data))
         const parsedData = JSON.parse(decodedData) as ClipPayload
-
-        const ret = await logseq.Editor.appendBlockInPage(
-          (await logseq.Editor.getCurrentPage())?.uuid!,
-          parsedData.markdown
-        )
-
-        console.log('Appended block:', ret)
-        return logseq.UI.showMsg('Clipper data processed successfully!')
+        setCurrentClipperData(parsedData)
       } catch (error) {
         console.error('Error processing clipper data:', error)
         return logseq.UI.showMsg('Failed to process clipper data: ' + (error as Error).message, 'error')
@@ -41,8 +54,13 @@ logseq.ready(() => {
     },
 
     onToolbarButtonClick: async () => {
-      return logseq.UI.showMsg('Toolbar button clicked!')
+      logseq.toggleMainUI()
     }
+  })
+
+  // mount main UI
+  import('./app.tsx').then(({ mount }) => {
+    mount()
   })
 
   // Register a command that shows an alert

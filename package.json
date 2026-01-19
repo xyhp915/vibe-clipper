@@ -6,7 +6,7 @@
     "dev:logseq": "vite dev --config vite.config.logseq.ts",
     "dev:chrome": "vite dev --config vite.config.chrome.ts",
     "build:logseq": "vite build --config vite.config.logseq.ts && mv dist/logseq.* dist/logseq/",
-    "build:chrome": "vite build --config vite.config.chrome.ts && cp src/chrome/manifest.json dist/chrome/manifest.json && mv dist/chrome/popup.html dist/chrome/popup.html && mv dist/chrome.* dist/chrome/",
+    "build:chrome": "vite build --config vite.config.chrome.ts && cp src/chrome/manifest.json dist/chrome/manifest.json && mv dist/chrome/popup.html dist/chrome/popup.html && mv dist/chrome.* dist/chrome/ && cp public/icon.png dist/chrome/",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -14,11 +14,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@hookstate/core": "^4.0.2",
     "@logseq/libs": "^0.2.11",
     "bulma": "^1.0.4",
     "dayjs": "^1.11.19",
     "defuddle": "^0.6.6",
     "dompurify": "^3.3.1",
+    "lucide-preact": "^0.562.0",
     "mathml-to-latex": "^1.5.0",
     "preact": "^10.27.2",
     "turndown": "^7.2.2",
