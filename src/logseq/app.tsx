@@ -13,6 +13,8 @@ const appState = hookstate<{ currentClipperData: ClipperData | null }>({
   currentClipperData: null,
 })
 
+export const useAppState = () => useHookstate(appState)
+
 export function setCurrentClipperData (data: any) {
   appState.currentClipperData.set(data)
   // show main ui
@@ -23,7 +25,15 @@ export function setCurrentClipperData (data: any) {
   }
 }
 
-export const useAppState = () => useHookstate(appState)
+async function upsertBlockPropertiesFromMetadata (
+    blockUUID: string, metadata: Record<string, any>,
+) {
+  for (const [key, value] of Object.entries(metadata)) {
+    // create property
+    await logseq.Editor.upsertProperty(key)
+    await logseq.Editor.upsertBlockProperty(blockUUID, key, value)
+  }
+}
 
 type InsertMode = 'currentBlock' | 'newPage' | 'todayJournal'
 
@@ -31,6 +41,13 @@ function App () {
   const appState = useAppState()
   const customPageName = useHookstate('')
   const insertMode = useHookstate<InsertMode>('currentBlock')
+  const clipperDataValue = appState.currentClipperData.get()
+  const editableMarkdown = useHookstate(clipperDataValue?.markdown || '')
+
+  // Update editableMarkdown when clipperDataValue changes
+  if (clipperDataValue?.markdown && editableMarkdown.get() !== clipperDataValue.markdown) {
+    editableMarkdown.set(clipperDataValue.markdown)
+  }
 
   // if (!appState.currentClipperData.get()) {}
 
@@ -47,12 +64,12 @@ function App () {
       return logseq.UI.showMsg('No clipper data to insert', 'warning')
     }
 
-    await logseq.Editor.insertBlock(currentBlock.uuid,
-        JSON.stringify(clipData, null, 2), {
-          sibling: true,
-        })
+    const content = editableMarkdown.get()
 
-    await logseq.UI.showMsg('Inserted clipper data into current block', 'success')
+    await logseq.Editor.insertBlock(currentBlock.uuid, content, { sibling: true })
+    await upsertBlockPropertiesFromMetadata(currentBlock.uuid, clipData.metadata)
+
+    return logseq.UI.showMsg('Inserted clipper data into current block', 'success')
   }
 
   const handlerInsertIntoNewPage = async () => {
@@ -64,12 +81,13 @@ function App () {
 
     const pageName = customPageName.get().trim() || `Clipped: ${new Date().toLocaleString()}`
 
-    const content = JSON.stringify(clipData, null, 2)
+    const content = editableMarkdown.get()
     const page = await logseq.Editor.createPage(pageName)
     if (page) {
       await logseq.Editor.appendBlockInPage(
           pageName, content,
       )
+      await upsertBlockPropertiesFromMetadata(page.uuid, clipData.metadata)
       await logseq.UI.showMsg(`Created new page "${pageName}" with clipper data`, 'success')
       customPageName.set('') // Clear the input after successful creation
     }
@@ -82,11 +100,10 @@ function App () {
       return logseq.UI.showMsg('No clipper data to insert', 'warning')
     }
 
-    // @ts-ignore
     const journalPage = await logseq.Editor.getTodayPage()
 
     if (journalPage) {
-      const content = JSON.stringify(clipData, null, 2)
+      const content = editableMarkdown.get()
       await logseq.Editor.appendBlockInPage(
           journalPage.name, content,
       )
@@ -123,10 +140,20 @@ function App () {
         ></button>
         <div className={'container p-4'}>
           <h1 class={'is-size-3'}>Logseq Clipper Plugin</h1>
-          {appState.currentClipperData.get() ? (
+          {clipperDataValue ? (
               <div>
-                <h2>Clipped Data:</h2>
-                <pre>{JSON.stringify(appState.currentClipperData.get(), null, 2)}</pre>
+                <h2 class={'is-size-5 mb-2'}>Clipped Markdown:</h2>
+                <div class={'field'}>
+                  <div class={'control'}>
+                    <textarea
+                        class={'textarea'}
+                        rows={10}
+                        value={editableMarkdown.get()}
+                        onInput={(e) => editableMarkdown.set((e.target as HTMLTextAreaElement).value)}
+                        placeholder={'Edit your markdown content here...'}
+                    />
+                  </div>
+                </div>
               </div>
           ) : (
               <p>No clipper data received yet.</p>
@@ -159,7 +186,7 @@ function App () {
 
             {/* Custom page name input - only show when newPage mode is selected */}
             {insertMode.get() === 'newPage' && (
-                <div class={'field mt-3'}>todayPageName
+                <div class={'field mt-3'}>
                   <label class={'label is-small'}>Custom Page Name (optional):</label>
                   <div class={'control'}>
                     <input

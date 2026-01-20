@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@hookstate/core": "^4.0.2",
-    "@logseq/libs": "^0.2.11",
+    "@logseq/libs": "^0.2.12",
     "bulma": "^1.0.4",
     "dayjs": "^1.11.19",
     "defuddle": "^0.6.6",

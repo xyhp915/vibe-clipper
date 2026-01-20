@@ -444,10 +444,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@logseq/libs@^0.2.11":
-  version "0.2.11"
-  resolved "https://registry.npmjs.org/@logseq/libs/-/libs-0.2.11.tgz"
-  integrity sha512-ysHymel/lJ+aNJfT/nGdqZ3SGfUn9J02VWFgrTnS6Jw2eAVKDEUChoayBEE1YYafqd0yd7rGYQ4Hb8QiLfbCtg==
+"@logseq/libs@^0.2.12":
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/@logseq/libs/-/libs-0.2.12.tgz#041ef2808c6700f6e3f78c447697adc91d392ecf"
+  integrity sha512-hUv08KSuQ41lMx4ZFNj56l89dy92oJZTGhIRjgJZCLXkbtBIH5WjGq7JRlCEBv5nHDTw3iaPOVFTa5gIvoF9HA==
   dependencies:
     csstype "3.1.0"
     debug "4.3.4"
