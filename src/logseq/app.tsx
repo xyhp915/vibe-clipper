@@ -2,6 +2,7 @@ import 'bulma/css/bulma.css'
 import './app.css'
 import { hookstate, useHookstate } from '@hookstate/core'
 import { render } from 'preact'
+import { useEffect } from 'preact/hooks'
 
 type ClipperData = {
   markdown: string
@@ -37,17 +38,200 @@ async function upsertBlockPropertiesFromMetadata (
 
 type InsertMode = 'currentBlock' | 'newPage' | 'todayJournal'
 
+type BlockType =
+    | 'heading'
+    | 'paragraph'
+    | 'quote'
+    | 'code'
+    | 'table'
+    | 'list'
+    | 'listItem'
+
+interface Block {
+  type: BlockType
+  content: string
+  level?: number  // For headings (1-6)
+  language?: string  // For code blocks
+  children?: Block[]
+}
+
+/**
+ * Parse markdown content into a hierarchical block structure
+ * Headings create parent-child relationships based on their levels
+ */
+function parseMarkdownToBlocks (markdown: string): Block[] {
+  const lines = markdown.split('\n')
+  const rootBlocks: Block[] = []
+  const headingStack: { block: Block; level: number }[] = []
+
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    const trimmedLine = line.trim()
+
+    // Skip empty lines
+    if (!trimmedLine) {
+      i++
+      continue
+    }
+
+    let block: Block | null = null
+
+    // Parse heading
+    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      const level = headingMatch[1].length
+      const content = headingMatch[2]
+      block = {
+        type: 'heading',
+        level,
+        content,
+        children: [],
+      }
+
+      // Pop stack until we find a parent with lower level
+      while (headingStack.length > 0 && headingStack[headingStack.length - 1].level >= level) {
+        headingStack.pop()
+      }
+
+      // Add to parent or root
+      if (headingStack.length > 0) {
+        const parent = headingStack[headingStack.length - 1].block
+        parent.children = parent.children || []
+        parent.children.push(block)
+      } else {
+        rootBlocks.push(block)
+      }
+
+      // Push to stack
+      headingStack.push({ block, level })
+      i++
+      continue
+    }
+
+    // Parse code block (fenced)
+    if (trimmedLine.startsWith('```')) {
+      const language = trimmedLine.slice(3).trim() || undefined
+      const codeLines: string[] = []
+      i++ // Move past opening fence
+
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i])
+        i++
+      }
+
+      block = {
+        type: 'code',
+        content: codeLines.join('\n'),
+        language,
+      }
+      i++ // Move past closing fence
+    }
+    // Parse quote block
+    else if (trimmedLine.startsWith('>')) {
+      const quoteLines: string[] = []
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quoteLines.push(lines[i].trim().slice(1).trim())
+        i++
+      }
+      block = {
+        type: 'quote',
+        content: quoteLines.join('\n'),
+      }
+    }
+    // Parse table
+    else if (trimmedLine.includes('|')) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].trim().includes('|')) {
+        tableLines.push(lines[i].trim())
+        i++
+      }
+      block = {
+        type: 'table',
+        content: tableLines.join('\n'),
+      }
+    }
+    // Parse list items
+    else if (/^[-*+]\s/.test(trimmedLine) || /^\d+\.\s/.test(trimmedLine)) {
+      const listItems: Block[] = []
+      while (i < lines.length) {
+        const listLine = lines[i].trim()
+        if (/^[-*+]\s/.test(listLine) || /^\d+\.\s/.test(listLine)) {
+          const content = listLine.replace(/^[-*+]\s/, '').replace(/^\d+\.\s/, '')
+          listItems.push({
+            type: 'listItem',
+            content,
+          })
+          i++
+        } else if (!listLine) {
+          i++
+          break
+        } else {
+          break
+        }
+      }
+      block = {
+        type: 'list',
+        content: '',
+        children: listItems,
+      }
+    }
+    // Parse paragraph (default)
+    else {
+      const paragraphLines: string[] = []
+      while (i < lines.length) {
+        const paraLine = lines[i].trim()
+        if (!paraLine ||
+            paraLine.startsWith('#') ||
+            paraLine.startsWith('>') ||
+            paraLine.startsWith('```') ||
+            paraLine.includes('|') ||
+            /^[-*+]\s/.test(paraLine) ||
+            /^\d+\.\s/.test(paraLine)) {
+          break
+        }
+        paragraphLines.push(paraLine)
+        i++
+      }
+      if (paragraphLines.length > 0) {
+        block = {
+          type: 'paragraph',
+          content: paragraphLines.join(' '),
+        }
+      }
+    }
+
+    // Add block to appropriate parent
+    if (block) {
+      if (headingStack.length > 0) {
+        const parent = headingStack[headingStack.length - 1].block
+        parent.children = parent.children || []
+        parent.children.push(block)
+      } else {
+        rootBlocks.push(block)
+      }
+    }
+  }
+
+  return rootBlocks
+}
+
 function App () {
   const appState = useAppState()
-  const customPageName = useHookstate('')
   const insertMode = useHookstate<InsertMode>('currentBlock')
   const clipperDataValue = appState.currentClipperData.get()
+  const customPageName = useHookstate('')
   const editableMarkdown = useHookstate(clipperDataValue?.markdown || '')
 
   // Update editableMarkdown when clipperDataValue changes
   if (clipperDataValue?.markdown && editableMarkdown.get() !== clipperDataValue.markdown) {
     editableMarkdown.set(clipperDataValue.markdown)
   }
+
+  useEffect(() => {
+    // You can perform side effects here if needed when metadata changes
+    customPageName.set(clipperDataValue?.metadata.title || '')
+  }, [clipperDataValue?.metadata])
 
   // if (!appState.currentClipperData.get()) {}
 
@@ -59,15 +243,16 @@ function App () {
     }
 
     const clipData = appState.currentClipperData.get()
+    // const clipperTag = await logseq.Editor.createTag(`web-clipper`)
 
     if (!clipData) {
       return logseq.UI.showMsg('No clipper data to insert', 'warning')
     }
 
-    const content = editableMarkdown.get()
+    const content = editableMarkdown.get() + ` - ${new Date().toLocaleString()} #[[web-clipper]]`
 
     await logseq.Editor.insertBlock(currentBlock.uuid, content, { sibling: true })
-    await upsertBlockPropertiesFromMetadata(currentBlock.uuid, clipData.metadata)
+    // await upsertBlockPropertiesFromMetadata(currentBlock.uuid, clipData.metadata)
 
     return logseq.UI.showMsg('Inserted clipper data into current block', 'success')
   }
@@ -80,13 +265,18 @@ function App () {
     }
 
     const pageName = customPageName.get().trim() || `Clipped: ${new Date().toLocaleString()}`
+    const clipperTag = await logseq.Editor.createTag(`web-clipper`)
 
     const content = editableMarkdown.get()
+
+    const blocks = parseMarkdownToBlocks(content)
+
+    console.log('===>>> Parsed blocks:', blocks)
+
     const page = await logseq.Editor.createPage(pageName)
     if (page) {
-      await logseq.Editor.appendBlockInPage(
-          pageName, content,
-      )
+      await logseq.Editor.addBlockTag(page.uuid, clipperTag!.uuid)
+      await logseq.Editor.appendBlockInPage(pageName, content)
       await upsertBlockPropertiesFromMetadata(page.uuid, clipData.metadata)
       await logseq.UI.showMsg(`Created new page "${pageName}" with clipper data`, 'success')
       customPageName.set('') // Clear the input after successful creation
