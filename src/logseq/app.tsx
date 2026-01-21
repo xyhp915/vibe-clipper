@@ -223,10 +223,9 @@ function App () {
   const customPageName = useHookstate('')
   const editableMarkdown = useHookstate(clipperDataValue?.markdown || '')
 
-  // Update editableMarkdown when clipperDataValue changes
-  if (clipperDataValue?.markdown && editableMarkdown.get() !== clipperDataValue.markdown) {
-    editableMarkdown.set(clipperDataValue.markdown)
-  }
+  useEffect(() => {
+    editableMarkdown.set(clipperDataValue?.markdown || '')
+  }, [clipperDataValue?.markdown])
 
   useEffect(() => {
     // You can perform side effects here if needed when metadata changes
@@ -339,7 +338,10 @@ function App () {
                         class={'textarea'}
                         rows={10}
                         value={editableMarkdown.get()}
-                        onInput={(e) => editableMarkdown.set((e.target as HTMLTextAreaElement).value)}
+                        onChange={(e) => {
+                          const value = (e.target as HTMLTextAreaElement).value
+                          editableMarkdown.set(value)
+                        }}
                         placeholder={'Edit your markdown content here...'}
                     />
                   </div>
