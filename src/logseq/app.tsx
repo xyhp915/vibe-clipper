@@ -216,6 +216,94 @@ function parseMarkdownToBlocks (markdown: string): Block[] {
   return rootBlocks
 }
 
+/**
+ * Convert Block to Logseq markdown format
+ */
+function blockToMarkdown (block: Block): string {
+  switch (block.type) {
+    case 'heading':
+      // Logseq uses ## as block prefix for headings, not markdown headings
+      return block.content
+    case 'code':
+      return block.language
+        ? `\`\`\`${block.language}\n${block.content}\n\`\`\``
+        : `\`\`\`\n${block.content}\n\`\`\``
+    case 'quote':
+      return block.content.split('\n').map(line => `> ${line}`).join('\n')
+    case 'table':
+      return block.content
+    case 'listItem':
+      return block.content
+    case 'paragraph':
+      return block.content
+    case 'list':
+      return '' // List items will be handled separately
+    default:
+      return block.content
+  }
+}
+
+/**
+ * Recursively insert blocks into Logseq maintaining hierarchy
+ * @param blocks - Array of blocks to insert
+ * @param parentBlockUUID - UUID of the parent block (or page UUID)
+ * @param isFirstLevel - Whether this is the first level of blocks being inserted
+ * @returns Array of inserted block UUIDs
+ */
+async function insertBlocksRecursively (
+  blocks: Block[],
+  parentBlockUUID: string,
+  isFirstLevel: boolean = true
+): Promise<string[]> {
+  const insertedUUIDs: string[] = []
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
+
+    // Skip empty list containers
+    if (block.type === 'list' && block.children && block.children.length > 0) {
+      // For list type, directly insert its children
+      const childUUIDs = await insertBlocksRecursively(
+        block.children,
+        parentBlockUUID,
+        isFirstLevel && i === 0
+      )
+      insertedUUIDs.push(...childUUIDs)
+      continue
+    }
+
+    const content = blockToMarkdown(block)
+
+    if (!content.trim()) continue
+
+    let insertedBlock
+
+    if (isFirstLevel && i === 0) {
+      // First block: append to page/parent
+      insertedBlock = await logseq.Editor.appendBlockInPage(parentBlockUUID, content)
+    } else {
+      // Subsequent blocks: insert as siblings
+      const previousBlockUUID = insertedUUIDs[insertedUUIDs.length - 1] || parentBlockUUID
+      insertedBlock = await logseq.Editor.insertBlock(
+        previousBlockUUID,
+        content,
+        { sibling: !isFirstLevel || i > 0 }
+      )
+    }
+
+    if (insertedBlock) {
+      insertedUUIDs.push(insertedBlock.uuid)
+
+      // Recursively insert children
+      if (block.children && block.children.length > 0) {
+        await insertBlocksRecursively(block.children, insertedBlock.uuid, true)
+      }
+    }
+  }
+
+  return insertedUUIDs
+}
+
 function App () {
   const appState = useAppState()
   const insertMode = useHookstate<InsertMode>('currentBlock')
@@ -242,16 +330,23 @@ function App () {
     }
 
     const clipData = appState.currentClipperData.get()
-    // const clipperTag = await logseq.Editor.createTag(`web-clipper`)
 
     if (!clipData) {
       return logseq.UI.showMsg('No clipper data to insert', 'warning')
     }
 
-    const content = editableMarkdown.get() + ` - ${new Date().toLocaleString()} #[[web-clipper]]`
+    const content = editableMarkdown.get()
+    const blocks = parseMarkdownToBlocks(content)
 
-    await logseq.Editor.insertBlock(currentBlock.uuid, content, { sibling: true })
-    // await upsertBlockPropertiesFromMetadata(currentBlock.uuid, clipData.metadata)
+    // Insert a header block with metadata
+    const headerContent = `Clipped from: ${clipData.url} - ${new Date().toLocaleString()} #[[web-clipper]]`
+    const headerBlock = await logseq.Editor.insertBlock(currentBlock.uuid, headerContent, { sibling: true })
+
+    if (headerBlock && blocks.length > 0) {
+      // Insert parsed blocks as children of the header block
+      await insertBlocksRecursively(blocks, headerBlock.uuid, true)
+      await upsertBlockPropertiesFromMetadata(headerBlock.uuid, clipData.metadata)
+    }
 
     return logseq.UI.showMsg('Inserted clipper data into current block', 'success')
   }
@@ -275,7 +370,18 @@ function App () {
     const page = await logseq.Editor.createPage(pageName)
     if (page) {
       await logseq.Editor.addBlockTag(page.uuid, clipperTag!.uuid)
-      await logseq.Editor.appendBlockInPage(pageName, content)
+
+      // Insert source info block
+      await logseq.Editor.appendBlockInPage(
+        pageName,
+        `Source: ${clipData.url}`
+      )
+
+      // Insert parsed blocks recursively with hierarchy
+      if (blocks.length > 0) {
+        await insertBlocksRecursively(blocks, pageName, true)
+      }
+
       await upsertBlockPropertiesFromMetadata(page.uuid, clipData.metadata)
       await logseq.UI.showMsg(`Created new page "${pageName}" with clipper data`, 'success')
       customPageName.set('') // Clear the input after successful creation
@@ -293,9 +399,18 @@ function App () {
 
     if (journalPage) {
       const content = editableMarkdown.get()
-      await logseq.Editor.appendBlockInPage(
-          journalPage.name, content,
-      )
+      const blocks = parseMarkdownToBlocks(content)
+
+      // Insert header block with source info
+      const headerContent = `Clipped from: ${clipData.url} - ${new Date().toLocaleString()} #[[web-clipper]]`
+      const headerBlock = await logseq.Editor.appendBlockInPage(journalPage.name, headerContent)
+
+      // Insert parsed blocks as children of header block
+      if (headerBlock && blocks.length > 0) {
+        await insertBlocksRecursively(blocks, headerBlock.uuid, true)
+        await upsertBlockPropertiesFromMetadata(headerBlock.uuid, clipData.metadata)
+      }
+
       await logseq.UI.showMsg(`Inserted clipper data into today's journal`, 'success')
     } else {
       await logseq.UI.showMsg('Could not find today\'s journal page', 'error')
