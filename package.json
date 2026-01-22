@@ -6,7 +6,7 @@
     "dev:logseq": "vite dev --config vite.config.logseq.ts",
     "dev:chrome": "vite dev --config vite.config.chrome.ts",
     "build:logseq": "vite build --config vite.config.logseq.ts && mv dist/logseq.* dist/logseq/",
-    "build:chrome": "vite build --config vite.config.chrome.ts && cp src/chrome/manifest.json dist/chrome/manifest.json && mv dist/chrome/popup.html dist/chrome/popup.html && mv dist/chrome.* dist/chrome/ && cp public/icon.png dist/chrome/",
+    "build:chrome": "vite build --config vite.config.chrome.ts && cp src/chrome/manifest.json dist/chrome/manifest.json && mv dist/chrome/popup.html dist/chrome/popup.html && mv dist/chrome.* dist/chrome/ && mv dist/background.js dist/chrome/ && cp public/icon.png dist/chrome/",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",

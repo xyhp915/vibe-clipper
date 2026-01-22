@@ -6,7 +6,10 @@
   "permissions": [
     "tabs",
     "activeTab",
-    "scripting"
+    "scripting",
+    "contextMenus",
+    "notifications",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -14,5 +17,8 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }

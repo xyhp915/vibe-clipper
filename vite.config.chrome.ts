@@ -11,10 +11,14 @@ export default defineConfig({
     emptyOutDir: false,
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'src/chrome/popup.html') // Input from chrome directory
+        popup: resolve(__dirname, 'src/chrome/popup.html'), // Input from chrome directory
+        background: resolve(__dirname, 'src/chrome/background.ts') // Background service worker
       },
       output: {
-        entryFileNames: 'chrome.[name].js',
+        entryFileNames: (chunkInfo) => {
+          // Background script should not have hash in name
+          return chunkInfo.name === 'background' ? '[name].js' : 'chrome.[name].js'
+        },
         chunkFileNames: 'chrome.[name].js',
         assetFileNames: 'chrome.[name][extname]'
       }

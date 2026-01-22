@@ -41,7 +41,77 @@ export function PopupUI () {
   // Check selection on mount
   useEffect(() => {
     checkSelection()
+    checkStoredSelection()
   }, [])
+
+  // Check if there's a stored selection from context menu
+  const checkStoredSelection = async () => {
+    try {
+      if (!isChromeExtension) return
+
+      const stored = await chrome.storage.local.get('clipSelection')
+      if (stored.clipSelection) {
+        const clipData = stored.clipSelection as { text: string; timestamp: number }
+        const { text, timestamp } = clipData
+
+        // Only use if it's recent (within last 5 seconds)
+        const age = Date.now() - timestamp
+        if (age < 5000) {
+          // Clear the stored selection
+          await chrome.storage.local.remove('clipSelection')
+
+          // Clip the stored selection
+          await clipStoredSelection(text)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking stored selection:', error)
+    }
+  }
+
+  // Clip the stored selection text
+  const clipStoredSelection = async (selectedText: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (typeof chrome === 'undefined' || !chrome.tabs) {
+        throw new Error('Chrome API not available.')
+      }
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const url = tab?.url || ''
+      const title = tab?.title || ''
+
+      // Create minimal HTML for the selection
+      const wrappedHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head><title>${title}</title></head>
+          <body>
+            <article><p>${selectedText}</p></article>
+          </body>
+        </html>
+      `
+
+      // Use clipper-core to process the selection
+      const result = clip(wrappedHtml, {
+        url,
+        cleanHtml: true,
+      })
+
+      // Override title to indicate it's a selection
+      result.metadata.title = `${title} (Selection)`
+
+      setClipResult(result)
+      setMarkdown(result.markdown)
+    } catch (error) {
+      console.error('Error clipping stored selection:', error)
+      const errorMsg = (error as Error).message
+      setError(errorMsg)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Clip selected content only
   const clipSelection = async () => {
