@@ -226,10 +226,10 @@ function blockToMarkdown (block: Block): string {
       return block.content
     case 'code':
       return block.language
-        ? `\`\`\`${block.language}\n${block.content}\n\`\`\``
-        : `\`\`\`\n${block.content}\n\`\`\``
+          ? `\`\`\`${block.language}\n${block.content}\n\`\`\``
+          : `\`\`\`\n${block.content}\n\`\`\``
     case 'quote':
-      return block.content.split('\n').map(line => `> ${line}`).join('\n')
+      return block.content.split('\n').map(line => `${line}`).join('\n')
     case 'table':
       return block.content
     case 'listItem':
@@ -251,9 +251,9 @@ function blockToMarkdown (block: Block): string {
  * @returns Array of inserted block UUIDs
  */
 async function insertBlocksRecursively (
-  blocks: Block[],
-  parentBlockUUID: string,
-  isFirstLevel: boolean = true
+    blocks: Block[],
+    parentBlockUUID: string,
+    isFirstLevel: boolean = true,
 ): Promise<string[]> {
   const insertedUUIDs: string[] = []
 
@@ -264,9 +264,9 @@ async function insertBlocksRecursively (
     if (block.type === 'list' && block.children && block.children.length > 0) {
       // For list type, directly insert its children
       const childUUIDs = await insertBlocksRecursively(
-        block.children,
-        parentBlockUUID,
-        isFirstLevel && i === 0
+          block.children,
+          parentBlockUUID,
+          isFirstLevel && i === 0,
       )
       insertedUUIDs.push(...childUUIDs)
       continue
@@ -285,14 +285,21 @@ async function insertBlocksRecursively (
       // Subsequent blocks: insert as siblings
       const previousBlockUUID = insertedUUIDs[insertedUUIDs.length - 1] || parentBlockUUID
       insertedBlock = await logseq.Editor.insertBlock(
-        previousBlockUUID,
-        content,
-        { sibling: !isFirstLevel || i > 0 }
+          previousBlockUUID,
+          content,
+          { sibling: !isFirstLevel || i > 0 },
       )
     }
 
     if (insertedBlock) {
       insertedUUIDs.push(insertedBlock.uuid)
+
+      // Set built-in property
+      if (block.type === 'heading' && block.level) {
+        await logseq.Editor.upsertBlockProperty(insertedBlock.uuid, ':logseq.property/heading', block.level)
+      } else if (block.type === 'quote') {
+        await logseq.Editor.addBlockTag(insertedBlock.uuid, ':logseq.class/Quote-block')
+      }
 
       // Recursively insert children
       if (block.children && block.children.length > 0) {
@@ -365,16 +372,14 @@ function App () {
 
     const blocks = parseMarkdownToBlocks(content)
 
-    console.log('===>>> Parsed blocks:', blocks)
-
     const page = await logseq.Editor.createPage(pageName)
     if (page) {
       await logseq.Editor.addBlockTag(page.uuid, clipperTag!.uuid)
 
       // Insert source info block
       await logseq.Editor.appendBlockInPage(
-        pageName,
-        `Source: ${clipData.url}`
+          pageName,
+          `Source: ${clipData.url}`,
       )
 
       // Insert parsed blocks recursively with hierarchy
