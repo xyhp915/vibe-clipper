@@ -323,9 +323,12 @@ function App () {
   }, [clipperDataValue?.markdown])
 
   useEffect(() => {
-    // You can perform side effects here if needed when metadata changes
-    customPageName.set(clipperDataValue?.metadata.title || '')
-  }, [clipperDataValue?.metadata])
+    // Only prefill from metadata when the user hasn't started typing.
+    // Depending on the whole metadata object can cause frequent resets because its reference may change.
+    if (!customPageName.get().trim()) {
+      customPageName.set(clipperDataValue?.metadata?.title || '')
+    }
+  }, [clipperDataValue?.metadata?.title])
 
   // if (!appState.currentClipperData.get()) {}
 
@@ -449,14 +452,13 @@ function App () {
         ></button>
         <div className={'container p-4'}>
           <h1 class={'is-size-3'}>Logseq Clipper Plugin</h1>
-          {clipperDataValue ? (
-              <div>
+          {(<div>
                 <h2 class={'is-size-5 mb-2'}>Clipped Markdown:</h2>
                 <div class={'field'}>
                   <div class={'control'}>
                     <textarea
                         class={'textarea'}
-                        rows={10}
+                        rows={16}
                         value={editableMarkdown.get()}
                         onChange={(e) => {
                           const value = (e.target as HTMLTextAreaElement).value
@@ -467,13 +469,11 @@ function App () {
                   </div>
                 </div>
               </div>
-          ) : (
-              <p>No clipper data received yet.</p>
           )}
 
           <div class={'py-4'}>
             {/* Insert Mode Selection */}
-            <div class={'field has-addons'}>
+            <div class={'field has-addons app-full-select-field'}>
               <div class={'control'}>
                 <div class={'select'}>
                   <select
@@ -506,7 +506,7 @@ function App () {
                         type={'text'}
                         placeholder={'Leave empty for auto-generated name'}
                         value={customPageName.get()}
-                        onInput={(e) => customPageName.set((e.target as HTMLInputElement).value)}
+                        onInput={(e) => customPageName.set((e.currentTarget as HTMLInputElement).value)}
                     />
                   </div>
                   <p class={'help'}>

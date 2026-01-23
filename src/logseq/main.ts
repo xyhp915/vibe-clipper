@@ -58,6 +58,16 @@ logseq.ready(() => {
     }
   })
 
+  // Esc close main UI
+  document.addEventListener('keydown', async (e) => {
+    if (e.key === 'Escape' &&
+      document.activeElement?.tagName !== 'INPUT' &&
+      document.activeElement?.tagName !== 'TEXTAREA'
+    ) {
+      logseq.hideMainUI()
+    }
+  })
+
   // mount main UI
   import('./app.tsx').then(({ mount }) => {
     mount()

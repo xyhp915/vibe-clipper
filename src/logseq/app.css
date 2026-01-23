@@ -4,3 +4,15 @@
   right: 12px;
   z-index: 1;
 }
+
+.app-full-select-field {
+  display: flex;
+  width: 100%;
+}
+
+.app-full-select-field > .control:first-child,
+.app-full-select-field > .control:first-child .select,
+.app-full-select-field > .control:first-child select {
+  flex: 1;
+  width: 100%;
+}
