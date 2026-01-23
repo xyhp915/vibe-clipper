@@ -97,7 +97,7 @@ export function PopupUI () {
       const result = clip(wrappedHtml, {
         url,
         cleanHtml: true,
-        bulletListMarker: '*',
+        bulletListMarker: '-',
         emDelimiter: '_',
       })
 
@@ -175,6 +175,8 @@ export function PopupUI () {
       const result = clip(wrappedHtml, {
         url,
         cleanHtml: true,
+        bulletListMarker: '-',
+        emDelimiter: '_',
       })
 
       // Override title to indicate it's a selection
