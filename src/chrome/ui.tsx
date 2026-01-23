@@ -97,6 +97,8 @@ export function PopupUI () {
       const result = clip(wrappedHtml, {
         url,
         cleanHtml: true,
+        bulletListMarker: '*',
+        emDelimiter: '_',
       })
 
       // Override title to indicate it's a selection
@@ -226,6 +228,8 @@ export function PopupUI () {
       const result = clip(html, {
         url,
         cleanHtml: true,
+        bulletListMarker: '-',
+        emDelimiter: '_',
       })
 
       setClipResult(result)
@@ -273,7 +277,7 @@ export function PopupUI () {
              height: '100%',
              overflow: 'auto',
              display: 'flex',
-             flexDirection: 'column'
+             flexDirection: 'column',
            }}>
         <h1 class="title is-4">
           Vibe Clipper
@@ -302,7 +306,7 @@ export function PopupUI () {
                 disabled={loading || !isChromeExtension}
             >
               <span class="icon">
-                <FileText size={16} />
+                <FileText size={16}/>
               </span>
               <span>{clipResult ? 'Re-clip Page' : 'Clip Page'}</span>
             </button>
@@ -315,14 +319,14 @@ export function PopupUI () {
                 title={!hasSelection ? 'Please select some text on the page first' : 'Clip only selected content'}
             >
               <span class="icon">
-                <TextCursor size={16} />
+                <TextCursor size={16}/>
               </span>
               <span>Clip Selection</span>
             </button>
             {!hasSelection && (
-              <p class="help has-text-grey is-size-7">
-                Select text on the page to enable this option
-              </p>
+                <p class="help has-text-grey is-size-7">
+                  Select text on the page to enable this option
+                </p>
             )}
           </div>
         </div>
@@ -366,20 +370,20 @@ export function PopupUI () {
                       onClick={sendToLogseq}
                   >
                     <span class="icon">
-                      <Send size={16} />
+                      <Send size={16}/>
                     </span>
                     <span>Send to Logseq</span>
                   </button>
                   <button
                       class="button is-info"
                       onClick={() => {
-                        navigator.clipboard.writeText(markdown)
-                            .then(() => alert('Copied to clipboard!'))
-                            .catch(err => setError('Failed to copy: ' + err))
+                        navigator.clipboard.writeText(markdown).
+                            then(() => alert('Copied to clipboard!')).
+                            catch(err => setError('Failed to copy: ' + err))
                       }}
                   >
                     <span class="icon">
-                      <Copy size={16} />
+                      <Copy size={16}/>
                     </span>
                     <span>Copy</span>
                   </button>
