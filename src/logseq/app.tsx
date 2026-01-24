@@ -30,6 +30,8 @@ async function upsertBlockPropertiesFromMetadata (
     blockUUID: string, metadata: Record<string, any>,
 ) {
   for (const [key, value] of Object.entries(metadata)) {
+    if (!value) continue
+
     // create property
     await logseq.Editor.upsertProperty(key)
     await logseq.Editor.upsertBlockProperty(blockUUID, key, value)
@@ -246,14 +248,14 @@ function blockToMarkdown (block: Block): string {
 /**
  * Recursively insert blocks into Logseq maintaining hierarchy
  * @param blocks - Array of blocks to insert
- * @param parentBlockUUID - UUID of the parent block (or page UUID)
- * @param isFirstLevel - Whether this is the first level of blocks being inserted
+ * @param parentBlockUUID - UUID of the parent block (or page name for root level)
+ * @param isPageLevel - Whether inserting at page level (true) or as children of a block (false)
  * @returns Array of inserted block UUIDs
  */
 async function insertBlocksRecursively (
     blocks: Block[],
     parentBlockUUID: string,
-    isFirstLevel: boolean = true,
+    isPageLevel: boolean = true,
 ): Promise<string[]> {
   const insertedUUIDs: string[] = []
 
@@ -266,7 +268,7 @@ async function insertBlocksRecursively (
       const childUUIDs = await insertBlocksRecursively(
           block.children,
           parentBlockUUID,
-          isFirstLevel && i === 0,
+          isPageLevel && i === 0,
       )
       insertedUUIDs.push(...childUUIDs)
       continue
@@ -278,16 +280,23 @@ async function insertBlocksRecursively (
 
     let insertedBlock
 
-    if (isFirstLevel && i === 0) {
-      // First block: append to page/parent
+    if (isPageLevel && i === 0) {
+      // First block at page level: append to page
       insertedBlock = await logseq.Editor.appendBlockInPage(parentBlockUUID, content)
+    } else if (!isPageLevel && i === 0) {
+      // First child of a block: insert as child
+      insertedBlock = await logseq.Editor.insertBlock(
+          parentBlockUUID,
+          content,
+          { sibling: false },
+      )
     } else {
-      // Subsequent blocks: insert as siblings
-      const previousBlockUUID = insertedUUIDs[insertedUUIDs.length - 1] || parentBlockUUID
+      // Subsequent blocks: insert as siblings of previous block
+      const previousBlockUUID = insertedUUIDs[insertedUUIDs.length - 1]
       insertedBlock = await logseq.Editor.insertBlock(
           previousBlockUUID,
           content,
-          { sibling: !isFirstLevel || i > 0 },
+          { sibling: true },
       )
     }
 
@@ -301,9 +310,9 @@ async function insertBlocksRecursively (
         await logseq.Editor.addBlockTag(insertedBlock.uuid, ':logseq.class/Quote-block')
       }
 
-      // Recursively insert children
+      // Recursively insert children (always as children of current block, not page level)
       if (block.children && block.children.length > 0) {
-        await insertBlocksRecursively(block.children, insertedBlock.uuid, true)
+        await insertBlocksRecursively(block.children, insertedBlock.uuid, false)
       }
     }
   }
@@ -317,6 +326,7 @@ function App () {
   const clipperDataValue = appState.currentClipperData.get()
   const customPageName = useHookstate('')
   const editableMarkdown = useHookstate(clipperDataValue?.markdown || '')
+  const isLoading = useHookstate(false)
 
   useEffect(() => {
     editableMarkdown.set(clipperDataValue?.markdown || '')
@@ -354,7 +364,7 @@ function App () {
 
     if (headerBlock && blocks.length > 0) {
       // Insert parsed blocks as children of the header block
-      await insertBlocksRecursively(blocks, headerBlock.uuid, true)
+      await insertBlocksRecursively(blocks, headerBlock.uuid, false)
       await upsertBlockPropertiesFromMetadata(headerBlock.uuid, clipData.metadata)
     }
 
@@ -415,7 +425,7 @@ function App () {
 
       // Insert parsed blocks as children of header block
       if (headerBlock && blocks.length > 0) {
-        await insertBlocksRecursively(blocks, headerBlock.uuid, true)
+        await insertBlocksRecursively(blocks, headerBlock.uuid, false)
         await upsertBlockPropertiesFromMetadata(headerBlock.uuid, clipData.metadata)
       }
 
@@ -428,16 +438,27 @@ function App () {
   const handleConfirm = async () => {
     const mode = insertMode.get()
 
-    switch (mode) {
-      case 'currentBlock':
-        await handleInsertIntoCurrentBlock()
-        break
-      case 'newPage':
-        await handlerInsertIntoNewPage()
-        break
-      case 'todayJournal':
-        await handlerInsertIntoTodayJournal()
-        break
+    try {
+      isLoading.set(true)
+
+      switch (mode) {
+        case 'currentBlock':
+          await handleInsertIntoCurrentBlock()
+          break
+        case 'newPage':
+          await handlerInsertIntoNewPage()
+          break
+        case 'todayJournal':
+          await handlerInsertIntoTodayJournal()
+          break
+      }
+      // hide main ui after insertion
+      logseq.hideMainUI()
+    } catch (error) {
+      console.error('Error inserting content:', error)
+      await logseq.UI.showMsg('Failed to insert content', 'error')
+    } finally {
+      isLoading.set(false)
     }
   }
 
@@ -458,7 +479,7 @@ function App () {
                   <div class={'control'}>
                     <textarea
                         class={'textarea'}
-                        rows={16}
+                        rows={10}
                         value={editableMarkdown.get()}
                         onChange={(e) => {
                           const value = (e.target as HTMLTextAreaElement).value
@@ -488,8 +509,9 @@ function App () {
               </div>
               <div class={'control'}>
                 <button
-                    class={'button is-primary'}
+                    class={`button is-primary ${isLoading.get() ? 'is-loading' : ''}`}
                     onClick={handleConfirm}
+                    disabled={isLoading.get()}
                 >
                   Confirm Insertion
                 </button>
@@ -520,7 +542,27 @@ function App () {
   )
 }
 
+function AppContainer () {
+  // Sync height to main UI content
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(async () => {
+      const height = document.body.scrollHeight
+      logseq.setMainUIInlineStyle({
+        height: `${height + 8}px`,
+      })
+    })
+    resizeObserver.observe(document.body)
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
+
+  return (
+      <App/>
+  )
+}
+
 export function mount () {
   // mount with preact
-  render(<App/>, document.getElementById('app')!)
+  render(<AppContainer/>, document.getElementById('app')!)
 }

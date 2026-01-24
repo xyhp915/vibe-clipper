@@ -23,7 +23,7 @@ logseq.ready(() => {
   // inject CSS
   logseq.setMainUIInlineStyle({
     width: '40vw',
-    minHeight: '300px',
+    minHeight: '280px',
     maxWidth: '800px',
     maxHeight: '80vh',
     borderRadius: '8px',
